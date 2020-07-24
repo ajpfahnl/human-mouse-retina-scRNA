@@ -1,0 +1,102 @@
+---
+title: "GSE137537 Analysis"
+output: html_notebook
+---
+# Setup
+Load libraries
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(Matrix)
+library(Seurat)
+```
+Download data
+```{r}
+import_remote_data <- function(file_url, type = "table") {
+  con <- gzcon(url(file_url))
+  txt <- readLines(con)
+  if (type == "MM") { return (readMM(textConnection(txt))) }
+  if (type == "table") { return (read.table(textConnection(txt))) }
+}
+
+count_matrix_URL <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE137nnn/GSE137537/suppl/GSE137537_counts.mtx.gz"
+gene_names_URL <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE137nnn/GSE137537/suppl/GSE137537_gene_names.txt.gz"
+sample_annotations_URL <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE137nnn/GSE137537/suppl/GSE137537_sample_annotations.tsv.gz"
+
+count_matrix <- as.matrix(import_remote_data(count_matrix_URL, type = "MM"))
+gene_names <- import_remote_data(gene_names_URL, type = "table")
+sample_annotations <- import_remote_data(sample_annotations_URL, type = "table")
+```
+Refactor data for Seurat analysis
+```{r}
+rownames(count_matrix) <- gene_names[,1]
+colnames(count_matrix) <- sample_annotations[-1,1]
+
+human_ret_seurat <- CreateSeuratObject(counts = count_matrix, project = "human_ret", min.cells = 3, min.features = 200)
+human_ret_seurat
+```
+
+# Preprocessing Check
+```{r}
+FeatureScatter(human_ret_seurat, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+```
+
+# Normalize
+```{r}
+human_ret_seurat <- NormalizeData(human_ret_seurat, normalization.method = "LogNormalize", scale.factor = 10000)
+```
+
+# Feature Selection
+```{r}
+human_ret_seurat <- FindVariableFeatures(human_ret_seurat, selection.method = "vst", nfeatures = 2000)
+
+top10 <- head(VariableFeatures(human_ret_seurat), 10)
+
+plot1 <- VariableFeaturePlot(human_ret_seurat)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
+```
+
+# Scale Data
+```{r}
+all.genes <- rownames(human_ret_seurat)
+human_ret_seurat <- ScaleData(human_ret_seurat, features = all.genes)
+```
+
+# Linear dimensional reduction
+```{r}
+human_ret_seurat <- RunPCA(human_ret_seurat, features = VariableFeatures(object = human_ret_seurat))
+# print(human_ret_seurat[["pca"]], dims = 1:5, nfeatures = 5)
+```
+```{r}
+DimHeatmap(human_ret_seurat, dims = 1:15, cells = 500, balanced = TRUE)
+```
+
+# Determine Dimensionality of Dataset
+```{r}
+human_ret_seurat <- JackStraw(human_ret_seurat, num.replicate = 100)
+human_ret_seurat <- ScoreJackStraw(human_ret_seurat, dims = 1:20)
+```
+```{r}
+JackStrawPlot(human_ret_seurat, dims = 1:15, xmax = 0.1, ymax = 1)
+ElbowPlot(human_ret_seurat)
+```
+
+
+# Cluster Cells
+```{r}
+human_ret_seurat <- FindNeighbors(human_ret_seurat, dims = 1:10)
+human_ret_seurat <- FindClusters(human_ret_seurat, resolution = 0.5)
+
+human_ret_seurat <- RunUMAP(human_ret_seurat, dims = 1:10)
+human_ret_seurat <- RunTSNE(human_ret_seurat, dims = 1:10)
+```
+```{r}
+DimPlot(human_ret_seurat, reduction = "umap")
+```
+
+```{r}
+DimPlot(human_ret_seurat, reduction = "tsne")
+```
+
