@@ -1,5 +1,5 @@
 ---
-title: "GSE137537 Analysis"
+title: "Comparison of the Transcriptomic Atlas of the Human Retina and Mouse Retina"
 output: html_notebook
 ---
 # Setup
@@ -10,14 +10,15 @@ library(tidyr)
 library(dplyr)
 library(Matrix)
 library(Seurat)
+library(cowplot)
 ```
-Download data
+Download Human Data
 ```{r}
-import_remote_data <- function(file_url, type = "table") {
+import_remote_data <- function(file_url, type = "table", header = FALSE) {
   con <- gzcon(url(file_url))
   txt <- readLines(con)
   if (type == "MM") { return (readMM(textConnection(txt))) }
-  if (type == "table") { return (read.table(textConnection(txt))) }
+  if (type == "table") { return (read.table(textConnection(txt), header = header)) }
 }
 
 count_matrix_URL <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE137nnn/GSE137537/suppl/GSE137537_counts.mtx.gz"
@@ -26,77 +27,92 @@ sample_annotations_URL <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE137nnn/GSE
 
 count_matrix <- as.matrix(import_remote_data(count_matrix_URL, type = "MM"))
 gene_names <- import_remote_data(gene_names_URL, type = "table")
-sample_annotations <- import_remote_data(sample_annotations_URL, type = "table")
+sample_annotations <- import_remote_data(sample_annotations_URL, type = "table", header = TRUE)
 ```
 Refactor data for Seurat analysis
 ```{r}
-rownames(count_matrix) <- gene_names[,1]
-colnames(count_matrix) <- sample_annotations[-1,1]
+remove_dup_features <- function(count.matrix) {
+  ind.dup <- which(duplicated(dimnames(count.matrix)[[1]]))
+  if (identical(ind.dup, integer(0))) {
+    return(count.matrix)
+  }
+  return(count.matrix[-ind.dup,])
+}
 
-human_ret_seurat <- CreateSeuratObject(counts = count_matrix, project = "human_ret", min.cells = 3, min.features = 200)
+remove_dup_cells <- function(count.matrix) {
+  ind.dup <- which(duplicated(dimnames(count.matrix)[[2]]))
+  if (identical(ind.dup, integer(0))) {
+    return(count.matrix)
+  }
+  return(count.matrix[,-ind.dup])
+}
+
+rownames(count_matrix) <- gene_names[,1]
+colnames(count_matrix) <- sample_annotations[,1]
+
+count_matrix <- remove_dup_features(count_matrix)
+count_matrix <- remove_dup_cells(count_matrix)
+
+human_ret_seurat <- CreateSeuratObject(counts = count_matrix, 
+                                       meta.data = sample_annotations, 
+                                       project = "human_ret", 
+                                       min.cells = 3, 
+                                       min.features = 200)
 human_ret_seurat
 ```
 
-# Preprocessing Check
+Process Mouse Data
 ```{r}
-FeatureScatter(human_ret_seurat, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+mouse.data <- Read10X(data.dir = "filtered_feature_bc_matrix")
+mouse.data <- remove_dup_features(mouse.data)
+mouse.data <- remove_dup_cells(mouse.data)
+mouse_ret_seurat <- CreateSeuratObject(counts = mouse.data, 
+                                       project = "mouse_ret", 
+                                       min.cells = 3, 
+                                       min.features = 200)
+mouse_ret_seurat
+```
+Combine
+```{r}
+ret.list <- list(human = human_ret_seurat, mouse = mouse_ret_seurat)
+
+ret.list <- lapply(X = ret.list, FUN = function(x) {
+    x <- NormalizeData(x, verbose = FALSE)
+    x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+})
 ```
 
-# Normalize
+# Integration
 ```{r}
-human_ret_seurat <- NormalizeData(human_ret_seurat, normalization.method = "LogNormalize", scale.factor = 10000)
+common_features <- function(seurat.list) {
+  s1.features <- unique(rownames(seurat.list[[1]]))
+  s2.features <- unique(rownames(seurat.list[[2]]))
+  return(intersect(s1.features, s2.features))
+}
+
+f.names <- rownames(human_ret_seurat)
+#f.names <- common_features(ret.list)
+ret.anchors <- FindIntegrationAnchors(object.list = ret.list, anchor.features = f.names, dims = 1:20, k.filter = NA)
+ret.combined <- IntegrateData(anchorset = ret.anchors, dims = 1:20)
 ```
 
-# Feature Selection
+# Integrated Analysis
 ```{r}
-human_ret_seurat <- FindVariableFeatures(human_ret_seurat, selection.method = "vst", nfeatures = 2000)
+DefaultAssay(ret.combined) <- "integrated"
 
-top10 <- head(VariableFeatures(human_ret_seurat), 10)
-
-plot1 <- VariableFeaturePlot(human_ret_seurat)
-plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
-plot2
-```
-
-# Scale Data
-```{r}
-all.genes <- rownames(human_ret_seurat)
-human_ret_seurat <- ScaleData(human_ret_seurat, features = all.genes)
-```
-
-# Linear dimensional reduction
-```{r}
-human_ret_seurat <- RunPCA(human_ret_seurat, features = VariableFeatures(object = human_ret_seurat))
-# print(human_ret_seurat[["pca"]], dims = 1:5, nfeatures = 5)
-```
-```{r}
-DimHeatmap(human_ret_seurat, dims = 1:15, cells = 500, balanced = TRUE)
-```
-
-# Determine Dimensionality of Dataset
-```{r}
-human_ret_seurat <- JackStraw(human_ret_seurat, num.replicate = 100)
-human_ret_seurat <- ScoreJackStraw(human_ret_seurat, dims = 1:20)
-```
-```{r}
-JackStrawPlot(human_ret_seurat, dims = 1:15, xmax = 0.1, ymax = 1)
-ElbowPlot(human_ret_seurat)
-```
-
-
-# Cluster Cells
-```{r}
-human_ret_seurat <- FindNeighbors(human_ret_seurat, dims = 1:10)
-human_ret_seurat <- FindClusters(human_ret_seurat, resolution = 0.5)
-
-human_ret_seurat <- RunUMAP(human_ret_seurat, dims = 1:10)
-human_ret_seurat <- RunTSNE(human_ret_seurat, dims = 1:10)
-```
-```{r}
-DimPlot(human_ret_seurat, reduction = "umap")
+# Run the standard workflow for visualization and clustering
+ret.combined <- ScaleData(ret.combined, verbose = FALSE)
+ret.combined <- RunPCA(ret.combined, npcs = 50, verbose = FALSE)
+# t-SNE and Clustering
+ret.combined <- RunUMAP(ret.combined, reduction = "pca", dims = 1:35)
+ret.combined <- FindNeighbors(ret.combined, reduction = "pca", dims = 1:35)
+ret.combined <- FindClusters(ret.combined, resolution = 0.5)
 ```
 
 ```{r}
-DimPlot(human_ret_seurat, reduction = "tsne")
+# Visualization
+p1 <- DimPlot(ret.combined, reduction = "umap", group.by = "orig.ident")
+p2 <- DimPlot(ret.combined, reduction = "umap", label = TRUE)
+plot_grid(p1, p2)
 ```
 
