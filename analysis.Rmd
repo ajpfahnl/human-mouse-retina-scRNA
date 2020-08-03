@@ -82,7 +82,7 @@ ret.combined <- FindNeighbors(ret.combined, reduction = "pca", dims = 1:35)
 ret.combined <- FindClusters(ret.combined, resolution = 0.07)
 ```
 # UMAP Visualization
-```{r}
+```{r warning=FALSE}
 # Visualization
 DimPlot(ret.combined, reduction = "umap", group.by = "orig.ident")
 DimPlot(ret.combined, reduction = "umap", label = TRUE)
@@ -91,18 +91,12 @@ DimPlot(ret.combined, reduction = "umap", label = TRUE)
 DimPlot(ret.combined, reduction = "umap", split.by = "orig.ident")
 ```
 
-# Identify Conserved Markers
-```{r}
-max_cluster <- 8
-marker.list <- as.list(c(0:max_cluster))
-marker.list <- lapply(X = marker.list, FUN = function(x) {
-  x <- FindConservedMarkers(ret.combined, ident.1 = x, grouping.var = "orig.ident", verbose = TRUE)
-})
-```
+# Identify Clusters with Canonical Markers
 ```{r}
 DefaultAssay(ret.combined) <- "RNA"
 
-features <- tolower(c("Pde6a","Gnat2","Nefl","Camk2b","Thy1","Gad1","Slc6a9","Pcsk6","Trpm1","Sept4","Glul","Arr3","C1qa","Tm4sf1"))
+features <- tolower(c("Pde6a","Gnat2","Nefl","Camk2b","Thy1","Gad1","Slc6a9",
+                      "Pcsk6","Trpm1","Sept4","Glul","Arr3","C1qa","Tm4sf1"))
 
 p <- FeaturePlot(object = ret.combined, 
             features = features, 
@@ -138,5 +132,52 @@ DimPlot(ret.combined, label = TRUE)
 ```
 
 
+# Find Differentially Expressed Genes
+```{r}
+cells.types <- c("Rod", "BC", "MG", "RGC", "CC", "AC", "VC", "HC", "M")
+theme_set(theme_cowplot())
+
+cell_type_avg <- function(seurat.combined, ident) {
+  cells.x <- subset(seurat.combined, idents = ident)
+  Idents(cells.x) <- "orig.ident"
+  cells.x.avg <- log1p(AverageExpression(cells.x, verbose = FALSE)$RNA)
+  cells.x.avg$gene <- rownames(cells.x.avg)
+  return(cells.x.avg)
+}
+
+cells.plot <- as.list(cells.types)
+cells.plot <- lapply(cells.plot, FUN = function(x) {
+  cells.x.avg <- cell_type_avg(ret.combined, ident = x)
+  x <- ggplot(cells.x.avg, aes(human_ret, mouse_ret)) + geom_point(size = 0.1) + ggtitle(x)
+  return(x)
+})
+
+# For individual plots
+# for (p in cells.plot) {
+#   print(p)
+# }
+
+# For grid plot
+cowplot::plot_grid(plotlist = cells.plot, ncol = 3)
+```
+```{r}
+ret.combined$celltype.organism <- paste(Idents(ret.combined), ret.combined$orig.ident, sep = "_")
+ret.combined$celltype <- Idents(ret.combined)
+Idents(ret.combined) <- "celltype.organism"
+```
+```{r}
+cells.diffgenes <- as.list(cells.types)
+cells.diffgenes <- lapply(cells.diffgenes, FUN = function(x) {
+  lab_human <- sprintf("%s_human_ret", x)
+  lab_mouse <- sprintf("%s_mouse_ret", x)
+  return(FindMarkers(ret.combined, ident.1 = lab_human, ident.2 = lab_mouse, verbose = FALSE))
+})
+```
+Tables with the most differentially expressed genes in each cell subtype:
+```{r}
+for(i in seq_along(cells.diffgenes)) {
+  print(knitr::kable(head(cells.diffgenes[[i]]),caption=cells.types[[i]]))
+}
+```
 
 
