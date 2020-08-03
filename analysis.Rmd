@@ -12,7 +12,7 @@ library(Matrix)
 library(Seurat)
 library(cowplot)
 ```
-Download Human Data
+Process Human Data
 ```{r}
 import_remote_data <- function(file_url, type = "table", header = FALSE) {
   con <- gzcon(url(file_url))
@@ -29,29 +29,9 @@ count_matrix <- as.matrix(import_remote_data(count_matrix_URL, type = "MM"))
 gene_names <- import_remote_data(gene_names_URL, type = "table")
 sample_annotations <- import_remote_data(sample_annotations_URL, type = "table", header = TRUE)
 ```
-Refactor data for Seurat analysis
 ```{r}
-remove_dup_features <- function(count.matrix) {
-  ind.dup <- which(duplicated(dimnames(count.matrix)[[1]]))
-  if (identical(ind.dup, integer(0))) {
-    return(count.matrix)
-  }
-  return(count.matrix[-ind.dup,])
-}
-
-remove_dup_cells <- function(count.matrix) {
-  ind.dup <- which(duplicated(dimnames(count.matrix)[[2]]))
-  if (identical(ind.dup, integer(0))) {
-    return(count.matrix)
-  }
-  return(count.matrix[,-ind.dup])
-}
-
-rownames(count_matrix) <- gene_names[,1]
-colnames(count_matrix) <- sample_annotations[,1]
-
-count_matrix <- remove_dup_features(count_matrix)
-count_matrix <- remove_dup_cells(count_matrix)
+rownames(count_matrix) <- tolower(gene_names[,1])
+colnames(count_matrix) <- tolower(sample_annotations[,1])
 
 human_ret_seurat <- CreateSeuratObject(counts = count_matrix, 
                                        meta.data = sample_annotations, 
@@ -64,8 +44,8 @@ human_ret_seurat
 Process Mouse Data
 ```{r}
 mouse.data <- Read10X(data.dir = "filtered_feature_bc_matrix")
-mouse.data <- remove_dup_features(mouse.data)
-mouse.data <- remove_dup_cells(mouse.data)
+dimnames(mouse.data)[[1]] <- tolower(dimnames(mouse.data)[[1]])
+dimnames(mouse.data)[[2]] <- tolower(dimnames(mouse.data)[[2]])
 mouse_ret_seurat <- CreateSeuratObject(counts = mouse.data, 
                                        project = "mouse_ret", 
                                        min.cells = 3, 
@@ -78,21 +58,13 @@ ret.list <- list(human = human_ret_seurat, mouse = mouse_ret_seurat)
 
 ret.list <- lapply(X = ret.list, FUN = function(x) {
     x <- NormalizeData(x, verbose = FALSE)
-    x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+    x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
 })
 ```
 
 # Integration
 ```{r}
-common_features <- function(seurat.list) {
-  s1.features <- unique(rownames(seurat.list[[1]]))
-  s2.features <- unique(rownames(seurat.list[[2]]))
-  return(intersect(s1.features, s2.features))
-}
-
-f.names <- rownames(human_ret_seurat)
-#f.names <- common_features(ret.list)
-ret.anchors <- FindIntegrationAnchors(object.list = ret.list, anchor.features = f.names, dims = 1:20, k.filter = NA)
+ret.anchors <- FindIntegrationAnchors(object.list = ret.list, dims = 1:20) # anchor.features = f.names, k.filter = NA
 ret.combined <- IntegrateData(anchorset = ret.anchors, dims = 1:20)
 ```
 
@@ -105,14 +77,45 @@ ret.combined <- ScaleData(ret.combined, verbose = FALSE)
 ret.combined <- RunPCA(ret.combined, npcs = 50, verbose = FALSE)
 # t-SNE and Clustering
 ret.combined <- RunUMAP(ret.combined, reduction = "pca", dims = 1:35)
+ret.combined <- RunTSNE(ret.combined, reduction = "pca", dims = 1:35)
 ret.combined <- FindNeighbors(ret.combined, reduction = "pca", dims = 1:35)
 ret.combined <- FindClusters(ret.combined, resolution = 0.5)
 ```
-
+# UMAP Visualization
 ```{r}
 # Visualization
 p1 <- DimPlot(ret.combined, reduction = "umap", group.by = "orig.ident")
 p2 <- DimPlot(ret.combined, reduction = "umap", label = TRUE)
 plot_grid(p1, p2)
+```
+```{r}
+DimPlot(ret.combined, reduction = "umap", split.by = "orig.ident")
+```
+
+# TSNE Visualization
+```{r}
+p1 <- DimPlot(ret.combined, reduction = "tsne", group.by = "orig.ident")
+p2 <- DimPlot(ret.combined, reduction = "tsne", label = TRUE)
+plot_grid(p1, p2)
+```
+```{r}
+DimPlot(ret.combined, reduction = "tsne", split.by = "orig.ident")
+```
+# Identify Conserved Markers
+```{r}
+cluster <- 6
+DefaultAssay(ret.combined) <- "RNA"
+markers <- FindConservedMarkers(ret.combined, ident.1 = cluster, grouping.var = "orig.ident", verbose = FALSE)
+head(markers)
+```
+```{r}
+marker.list <- as.list(c(0:8))
+marker.list <- lapply(X = marker.list, FUN = function(x) {
+  markers <- FindConservedMarkers(ret.combined, ident.1 = x, grouping.var = "orig.ident", verbose)
+})
+```
+
+```{r}
+FeaturePlot(ret.combined, features = rownames(markers)[1:6], min.cutoff = "q9")
 ```
 
