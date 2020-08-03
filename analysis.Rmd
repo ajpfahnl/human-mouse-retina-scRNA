@@ -11,6 +11,7 @@ library(dplyr)
 library(Matrix)
 library(Seurat)
 library(cowplot)
+library(patchwork)
 ```
 Process Human Data
 ```{r}
@@ -103,14 +104,27 @@ DimPlot(ret.combined, reduction = "tsne", split.by = "orig.ident")
 ```
 # Identify Conserved Markers
 ```{r}
-max_cluster <- 10
+max_cluster <- 8
 marker.list <- as.list(c(0:max_cluster))
 marker.list <- lapply(X = marker.list, FUN = function(x) {
-  markers <- FindConservedMarkers(ret.combined, ident.1 = x, grouping.var = "orig.ident", verbose = TRUE)
+  x <- FindConservedMarkers(ret.combined, ident.1 = x, grouping.var = "orig.ident", verbose = TRUE)
 })
 ```
-
 ```{r}
-FeaturePlot(ret.combined, features = rownames(markers)[1:6], min.cutoff = "q9")
+DefaultAssay(ret.combined) <- "RNA"
+plots <- as.list(1:(max_cluster+1))
+plots <- lapply(X = plots, FUN = function(x) {
+  x <- FeaturePlot(ret.combined, features = rownames(marker.list[[x]])[1:6], min.cutoff = "q9")
+})
 ```
+```{r}
+for (i in seq_along(plots)) {
+  t <- sprintf("Cluster %d", (i-1))
+  p <- plots[[i]] + plot_annotation(title = t)
+  print(p)
+}
+```
+
+
+
 
