@@ -179,5 +179,19 @@ for(i in seq_along(cells.diffgenes)) {
   print(knitr::kable(head(cells.diffgenes[[i]]),caption=cells.types[[i]]))
 }
 ```
-
+```{r warning=FALSE}
+genes_to_plot <- 3
+for (i in seq_along(cells.types)) {
+  print(FeaturePlot(object = ret.combined, 
+              features = rownames(cells.diffgenes[[i]])[1:genes_to_plot], 
+              split.by = "orig.ident", 
+              max.cutoff = 3, 
+              cols = c("grey", "red"),
+              pt.size = 0.07,
+              combine = TRUE,
+              label.size = 0.5
+              ) + plot_annotation(title = cells.types[[i]]) & NoLegend() & NoAxes()
+        )
+}
+```
 
