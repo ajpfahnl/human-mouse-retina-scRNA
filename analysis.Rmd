@@ -65,7 +65,7 @@ ret.list <- lapply(X = ret.list, FUN = function(x) {
 # Integration
 ```{r}
 ret.anchors <- FindIntegrationAnchors(object.list = ret.list, dims = 1:50,  anchor.features = 1000)
-ret.combined <- IntegrateData(anchorset = ret.anchors, dims = 1:20)
+ret.combined <- IntegrateData(anchorset = ret.anchors, dims = 1:50)
 ```
 
 # Integrated Analysis
@@ -79,7 +79,7 @@ ret.combined <- RunPCA(ret.combined, npcs = 50, verbose = FALSE)
 ret.combined <- RunUMAP(ret.combined, reduction = "pca", dims = 1:35)
 ret.combined <- RunTSNE(ret.combined, reduction = "pca", dims = 1:35)
 ret.combined <- FindNeighbors(ret.combined, reduction = "pca", dims = 1:35)
-ret.combined <- FindClusters(ret.combined, resolution = 0.075)
+ret.combined <- FindClusters(ret.combined, resolution = 0.05)
 ```
 # UMAP Visualization
 ```{r}
