@@ -78,30 +78,19 @@ ret.combined <- ScaleData(ret.combined, verbose = FALSE)
 ret.combined <- RunPCA(ret.combined, npcs = 50, verbose = FALSE)
 # t-SNE and Clustering
 ret.combined <- RunUMAP(ret.combined, reduction = "pca", dims = 1:35)
-ret.combined <- RunTSNE(ret.combined, reduction = "pca", dims = 1:35)
 ret.combined <- FindNeighbors(ret.combined, reduction = "pca", dims = 1:35)
-ret.combined <- FindClusters(ret.combined, resolution = 0.05)
+ret.combined <- FindClusters(ret.combined, resolution = 0.07)
 ```
 # UMAP Visualization
 ```{r}
 # Visualization
-p1 <- DimPlot(ret.combined, reduction = "umap", group.by = "orig.ident")
-p2 <- DimPlot(ret.combined, reduction = "umap", label = TRUE)
-plot_grid(p1, p2)
+DimPlot(ret.combined, reduction = "umap", group.by = "orig.ident")
+DimPlot(ret.combined, reduction = "umap", label = TRUE)
 ```
 ```{r}
 DimPlot(ret.combined, reduction = "umap", split.by = "orig.ident")
 ```
 
-# TSNE Visualization
-```{r}
-p1 <- DimPlot(ret.combined, reduction = "tsne", group.by = "orig.ident")
-p2 <- DimPlot(ret.combined, reduction = "tsne", label = TRUE)
-plot_grid(p1, p2)
-```
-```{r}
-DimPlot(ret.combined, reduction = "tsne", split.by = "orig.ident")
-```
 # Identify Conserved Markers
 ```{r}
 max_cluster <- 8
@@ -112,17 +101,40 @@ marker.list <- lapply(X = marker.list, FUN = function(x) {
 ```
 ```{r}
 DefaultAssay(ret.combined) <- "RNA"
-plots <- as.list(1:(max_cluster+1))
-plots <- lapply(X = plots, FUN = function(x) {
-  x <- FeaturePlot(ret.combined, features = rownames(marker.list[[x]])[1:6], min.cutoff = "q9")
-})
-```
-```{r}
-for (i in seq_along(plots)) {
-  t <- sprintf("Cluster %d", (i-1))
-  p <- plots[[i]] + plot_annotation(title = t)
-  print(p)
+
+features <- tolower(c("Pde6a","Gnat2","Nefl","Camk2b","Thy1","Gad1","Slc6a9","Pcsk6","Trpm1","Sept4","Glul","Arr3","C1qa","Tm4sf1"))
+
+p <- FeaturePlot(object = ret.combined, 
+            features = features, 
+            pt.size = 0.07,
+            cols = c("lightgrey", "#F26969"),
+            min.cutoff = "q9",
+            combine = FALSE)
+
+for(i in 1:length(p)) {
+  p[[i]] <- p[[i]] + NoLegend() + NoAxes()
 }
+
+cowplot::plot_grid(plotlist = p, ncol=3)
+```
+
+* Rod : pde6a
+* AC (amacrine cell) : gad1, slc6a9
+* MG (Müller glia) : glul
+* BC (bipolar cell) : Trpm
+* CC (cone cell) : gnat2, arr3
+* RGC (retinal ganglial cell) : nefl, thy1
+* VC (vascular cell) : mgp, tm4sf1
+* M (microglia) : c1qa
+* HC (horizontal cell) : sept4
+
+Markers were determined from [this](https://www.nature.com/articles/s41467-019-12780-8) paper and other sources.
+```{r}
+ret.combined <- RenameIdents(ret.combined, `0` = "Rod", `1` = "BC", `2` = "MG", 
+    `3` = "MG", `4` = "RGC", `5` = "CC", `6` = "AC", `7` = "VC", `8` = "HC", `9` = "M", 
+    `10` = "HC")
+
+DimPlot(ret.combined, label = TRUE)
 ```
 
 
