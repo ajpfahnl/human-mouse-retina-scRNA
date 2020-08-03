@@ -64,7 +64,7 @@ ret.list <- lapply(X = ret.list, FUN = function(x) {
 
 # Integration
 ```{r}
-ret.anchors <- FindIntegrationAnchors(object.list = ret.list, dims = 1:20) # anchor.features = f.names, k.filter = NA
+ret.anchors <- FindIntegrationAnchors(object.list = ret.list, dims = 1:50,  anchor.features = 1000)
 ret.combined <- IntegrateData(anchorset = ret.anchors, dims = 1:20)
 ```
 
@@ -79,7 +79,7 @@ ret.combined <- RunPCA(ret.combined, npcs = 50, verbose = FALSE)
 ret.combined <- RunUMAP(ret.combined, reduction = "pca", dims = 1:35)
 ret.combined <- RunTSNE(ret.combined, reduction = "pca", dims = 1:35)
 ret.combined <- FindNeighbors(ret.combined, reduction = "pca", dims = 1:35)
-ret.combined <- FindClusters(ret.combined, resolution = 0.5)
+ret.combined <- FindClusters(ret.combined, resolution = 0.075)
 ```
 # UMAP Visualization
 ```{r}
@@ -103,15 +103,10 @@ DimPlot(ret.combined, reduction = "tsne", split.by = "orig.ident")
 ```
 # Identify Conserved Markers
 ```{r}
-cluster <- 6
-DefaultAssay(ret.combined) <- "RNA"
-markers <- FindConservedMarkers(ret.combined, ident.1 = cluster, grouping.var = "orig.ident", verbose = FALSE)
-head(markers)
-```
-```{r}
-marker.list <- as.list(c(0:8))
+max_cluster <- 10
+marker.list <- as.list(c(0:max_cluster))
 marker.list <- lapply(X = marker.list, FUN = function(x) {
-  markers <- FindConservedMarkers(ret.combined, ident.1 = x, grouping.var = "orig.ident", verbose)
+  markers <- FindConservedMarkers(ret.combined, ident.1 = x, grouping.var = "orig.ident", verbose = TRUE)
 })
 ```
 
