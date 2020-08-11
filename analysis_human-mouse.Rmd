@@ -12,11 +12,6 @@ library(Matrix)
 library(Seurat)
 library(cowplot)
 library(patchwork)
-
-# parallelization
-library(future)
-options(future.globals.maxSize= +Inf)
-plan()
 ```
 Process Human Data
 ```{r}
@@ -26,20 +21,21 @@ import_remote_data <- function(file_url, type = "table", header = FALSE) {
   if (type == "MM") { return (readMM(textConnection(txt))) }
   if (type == "table") { return (read.table(textConnection(txt), header = header)) }
 }
+
 count_matrix_URL <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE137nnn/GSE137537/suppl/GSE137537_counts.mtx.gz"
 gene_names_URL <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE137nnn/GSE137537/suppl/GSE137537_gene_names.txt.gz"
 sample_annotations_URL <- "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE137nnn/GSE137537/suppl/GSE137537_sample_annotations.tsv.gz"
 
-human.count_matrix <- as.matrix(import_remote_data(count_matrix_URL, type = "MM"))
-human.gene_names <- import_remote_data(gene_names_URL, type = "table")
-human.sample_annotations <- import_remote_data(sample_annotations_URL, type = "table", header = TRUE)
+count_matrix <- as.matrix(import_remote_data(count_matrix_URL, type = "MM"))
+gene_names <- import_remote_data(gene_names_URL, type = "table")
+sample_annotations <- import_remote_data(sample_annotations_URL, type = "table", header = TRUE)
 ```
 ```{r}
-rownames(human.count_matrix) <- tolower(human.gene_names[,1])
-colnames(human.count_matrix) <- tolower(human.sample_annotations[,1])
+rownames(count_matrix) <- tolower(gene_names[,1])
+colnames(count_matrix) <- tolower(sample_annotations[,1])
 
-human_ret_seurat <- CreateSeuratObject(counts = human.count_matrix, 
-                                       meta.data = human.sample_annotations, 
+human_ret_seurat <- CreateSeuratObject(counts = count_matrix, 
+                                       meta.data = sample_annotations, 
                                        project = "human_ret", 
                                        min.cells = 3, 
                                        min.features = 200)
@@ -57,73 +53,24 @@ mouse_ret_seurat <- CreateSeuratObject(counts = mouse.data,
                                        min.features = 200)
 mouse_ret_seurat
 ```
-
-Process Primate Data
-```{bash}
-url=https://ftp.ncbi.nlm.nih.gov/geo/series/GSE118nnn/GSE118546/suppl/GSE118546_macaque_fovea_all_10X_Jan2018.Rdata.gz
-wget $url -O primate_data/GSE118546_macaque_fovea_all_10X_Jan2018.Rdata.gz
-gunzip primate_data/*
-```
-```{r}
-install.packages( c('devtools', 'roxygen2') )
-library(devtools)
-library(roxygen2)
-install_github( 'hb-gitified/cellrangerRkit',
-                auth_token = 'your_token' )
-```
-```{r}
-load("primate_data/GSE118546_macaque_fovea_all_10X_Jan2018.Rdata")
-
-dimnames(Count.mat_fovea)[[1]] <- tolower(dimnames(Count.mat_fovea)[[1]])
-macaque_fovea_seurat <- CreateSeuratObject(Count.mat_fovea,
-                                           project = "macaque_fovea", 
-                                           min.cells = 3, 
-                                           min.features = 200)
-
-# give macaque dta uniform name in "orig.ident" metadata column
-AddMetaData(macaque_fovea_seurat, 
-            metadata = macaque_fovea_seurat[["orig.ident"]], 
-            col.name = "orig.sample.name")
-macaque_fovea_seurat[["orig.ident"]] <- "macaque_fovea"
-
-macaque_fovea_seurat
-```
-Cleanup
-```{r}
-rm(human.count_matrix, human.gene_names, human.sample_annotations)
-rm(count_matrix_URL, gene_names_URL, sample_annotations_URL, import_remote_data)
-rm(mouse.data)
-rm(Count.mat_fovea, macaque_fovea)
-```
-
-
 Combine
 ```{r}
-# combine
-ret.list <- list(human = human_ret_seurat, mouse = mouse_ret_seurat, macaque = macaque_fovea_seurat)
+ret.list <- list(human = human_ret_seurat, mouse = mouse_ret_seurat)
 
-# preprocess
 ret.list <- lapply(X = ret.list, FUN = function(x) {
     x <- NormalizeData(x, verbose = FALSE)
     x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
 })
-
-# cleanup
-rm(human_ret_seurat, mouse_ret_seurat, macaque_fovea_seurat)
 ```
 
 # Integration
 ```{r}
-plan("multiprocess", workers = 4)
 ret.anchors <- FindIntegrationAnchors(object.list = ret.list, dims = 1:50,  anchor.features = 1000)
-plan("multiprocess", workers = 1)
 ret.combined <- IntegrateData(anchorset = ret.anchors, dims = 1:50)
 ```
 
 # Integrated Analysis
 ```{r}
-plan("multiprocess", workers = 4)
-
 DefaultAssay(ret.combined) <- "integrated"
 
 # Run the standard workflow for visualization and clustering
@@ -132,10 +79,11 @@ ret.combined <- RunPCA(ret.combined, npcs = 50, verbose = FALSE)
 # t-SNE and Clustering
 ret.combined <- RunUMAP(ret.combined, reduction = "pca", dims = 1:35)
 ret.combined <- FindNeighbors(ret.combined, reduction = "pca", dims = 1:35)
-ret.combined <- FindClusters(ret.combined, resolution = 0.075)
+ret.combined <- FindClusters(ret.combined, resolution = 0.07)
 ```
 # UMAP Visualization
 ```{r warning=FALSE}
+# Visualization
 DimPlot(ret.combined, reduction = "umap", group.by = "orig.ident")
 DimPlot(ret.combined, reduction = "umap", label = TRUE)
 ```
@@ -148,28 +96,26 @@ DimPlot(ret.combined, reduction = "umap", split.by = "orig.ident")
 DefaultAssay(ret.combined) <- "RNA"
 
 features <- tolower(c("Pde6a","Gnat2","Nefl","Camk2b","Thy1","Gad1","Slc6a9",
-                      "Pcsk6","Trpm1","Sept4","Glul","Arr3","C1qa","Tm4sf1", "Mgp"))
+                      "Pcsk6","Trpm1","Sept4","Glul","Arr3","C1qa","Tm4sf1"))
 
-FeaturePlot(object = ret.combined, 
+p <- FeaturePlot(object = ret.combined, 
             features = features, 
-            pt.size = 0.1,
+            pt.size = 0.07,
             cols = c("lightgrey", "#F26969"),
             min.cutoff = "q9",
-            combine = TRUE) & NoLegend() & NoAxes
+            combine = FALSE)
 
-# Cowplot method: make sure to change to "combine = FALSE" and remove "& NoLegend() & NoAxes"
+for(i in 1:length(p)) {
+  p[[i]] <- p[[i]] + NoLegend() + NoAxes()
+}
 
-# for(i in 1:length(p)) {
-#   p[[i]] <- p[[i]] + NoLegend() + NoAxes()
-# }
-# 
-# cowplot::plot_grid(plotlist = p, ncol=3)
+cowplot::plot_grid(plotlist = p, ncol=3)
 ```
 
 * Rod : pde6a
 * AC (amacrine cell) : gad1, slc6a9
 * MG (Müller glia) : glul
-* BC (bipolar cell) : Trpm, camk2b
+* BC (bipolar cell) : Trpm
 * CC (cone cell) : gnat2, arr3
 * RGC (retinal ganglial cell) : nefl, thy1
 * VC (vascular cell) : mgp, tm4sf1
@@ -178,9 +124,9 @@ FeaturePlot(object = ret.combined,
 
 Markers were determined from [this](https://www.nature.com/articles/s41467-019-12780-8) paper and other sources.
 ```{r}
-ret.combined <- RenameIdents(ret.combined, `0` = "MG", `1` = "Rod", `2` = "RGC", 
-    `3` = "RGC", `4` = "BC", `5` = "CC", `6` = "BC", `7` = "AC", `8` = "BC", `9` = "RGC", 
-    `10` = "RGC", `11`= "HC", `12` = "MG", `13` = "VC", `14` = "RGC", `15` = "RGC", `16` = "M", `17` = "RGC")
+ret.combined <- RenameIdents(ret.combined, `0` = "Rod", `1` = "BC", `2` = "MG", 
+    `3` = "MG", `4` = "RGC", `5` = "CC", `6` = "AC", `7` = "VC", `8` = "HC", `9` = "M", 
+    `10` = "HC")
 
 DimPlot(ret.combined, label = TRUE)
 ```
