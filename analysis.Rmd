@@ -1,5 +1,5 @@
 ---
-title: "Comparison of the Transcriptomic Atlas of the Human Retina and Mouse Retina"
+title: "Integrating Primate Data into Analysis"
 output: html_notebook
 ---
 # Setup
@@ -139,8 +139,8 @@ ret.combined <- FindClusters(ret.combined, resolution = 0.075)
 DimPlot(ret.combined, reduction = "umap", group.by = "orig.ident")
 DimPlot(ret.combined, reduction = "umap", label = TRUE)
 ```
-```{r}
-DimPlot(ret.combined, reduction = "umap", split.by = "orig.ident")
+```{r, fig.height = 4, fig.width = 3}
+DimPlot(ret.combined, reduction = "umap", split.by = "orig.ident", ncol = 1)
 ```
 
 # Identify Clusters with Canonical Markers
@@ -233,7 +233,7 @@ for(i in seq_along(cells.diffgenes)) {
   print(knitr::kable(head(cells.diffgenes[[i]]),caption=cells.types[[i]]))
 }
 ```
-# Save as csv files
+Save as csv files
 ```{r}
 for(i in seq_along(cells.diffgenes)) {
   write.csv(cells.diffgenes[[i]], sprintf("results/%d_%s.csv", i, cells.types[[i]]))
@@ -254,5 +254,10 @@ for (i in seq_along(cells.types)) {
               ) + plot_annotation(title = cells.types[[i]]) & NoLegend() & NoAxes()
         )
 }
+```
+
+Check cell proportion for each species:
+```{r}
+knitr::kable(prop.table(x = table(Idents(ret.combined), ret.combined@meta.data$orig.ident), margin = 2))
 ```
 
