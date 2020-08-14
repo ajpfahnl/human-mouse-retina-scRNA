@@ -224,7 +224,7 @@ cells.diffgenes <- lapply(cells.diffgenes, FUN = function(x) {
 
 for(i in seq_along(cells.diffgenes)) {
 	x <- cells.diffgenes[[i]]
-	x <- cbind(x, logp = -log(x$p_val), types = cells.types[[i]], genes = rownames(x))
+	x <- cbind(x, logp = -log10(x$p_val), types = cells.types[[i]], genes = rownames(x))
 	x <- x[!grepl("mt-", x$genes),] # remove mitochondrial genes
 	cells.diffgenes[[i]] <- x
 	rm(x)
@@ -265,7 +265,7 @@ knitr::kable(prop.table(x = table(Idents(ret.combined), ret.combined@meta.data$o
 ```
 
 # Gene Enrichment Analysis
-```{r}
+```{r warning=FALSE}
 library(ggplot2)
 library(ggrepel)
 library(scales)
@@ -295,15 +295,18 @@ ggplot(data=cells.diffgenes.combined,
 		  panel.grid.minor = element_blank()) + 
 	labs(x = "log2(Fold changes)\n(3K/WT)", y ="-log10(p value)") +
 	scale_x_continuous(limits=c(-3, 3)) +
-	scale_y_continuous(limits=c(1, 750)) +
+	scale_y_continuous(limits=c(1, 300)) +
 	geom_hline(yintercept= 1, colour="grey", linetype="dashed", size=0.7 ) +
 	geom_vline(xintercept= 0 , colour="grey",   size=0.7)
 
 ```
 
 ```{r, fig.height = 4, fig.width = 6, dpi = 400, warning=FALSE}
-plot_enrichment <- function(type = "Rod", other = "") {
-	file_path <- sprintf("enrich_data/%s_%s.txt", type, other)
+library(stringr)
+plot_enrichment <- function(type = "Rod", info = "") {
+	if (info != "") { info.str <- sprintf("_%s", info) }
+	else {info.str <- ""}
+	file_path <- sprintf("enrich_data/%s%s.txt", type, info.str)
 	x <- read.table(file_path, header=T, sep="\t", skip = 11)
 	colnames(x) <- gsub("upload_1..fold.Enrichment.", "Fold_Enrichment", colnames(x))
 	colnames(x) <- gsub("upload_1..FDR.", "FDR", colnames(x))
@@ -320,15 +323,18 @@ plot_enrichment <- function(type = "Rod", other = "") {
 			  axis.text.y = element_text(size = 12) , 
 			  panel.grid.major = element_blank(), 
 			  panel.grid.minor = element_blank()) + 
-		labs(x = " ", y =" ") +
+		labs(x = "Fold Enrichment", y =" ") +
 		scale_colour_gradient(low = "red", high = "blue") +
-		ggtitle(type)
+		scale_y_discrete(labels = function(x) str_wrap(x, width = 50)) +
+		ggtitle(type, info)
 	return(g)
 }
 
-for (type in cells.types) {
-	print(plot_enrichment(type = type, other= "top200"))
+for (type in cells.types[-c(6,4)]) {
+	print(plot_enrichment(type = type, info = "top200"))
 	rm(type)
 }
+plot_enrichment(type = "RGC")
+plot_enrichment(type = "AC")
 ```
 
