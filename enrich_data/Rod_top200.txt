@@ -1,0 +1,32 @@
+
+
+
+
+
+Analysis Type:	PANTHER Overrepresentation Test (Released 20200728)
+Annotation Version and Release Date:	GO Ontology database DOI:  10.5281/zenodo.3954044 Released 2020-07-16
+Analyzed List:	upload_1 (Homo sapiens)
+Reference List:	Homo sapiens (all genes in database)
+Test Type:	FISHER
+Correction:	FDR
+GO biological process complete	Homo sapiens - REFLIST (20851)	upload_1 (122)	upload_1 (expected)	upload_1 (over/under)	upload_1 (fold Enrichment)	upload_1 (raw P-value)	upload_1 (FDR)
+phototransduction (GO:0007602)	45	6	.26	+	22.79	4.98E-07	1.32E-03
+detection of light stimulus (GO:0009583)	62	7	.36	+	19.30	1.52E-07	6.03E-04
+detection of visible light (GO:0009584)	48	5	.28	+	17.80	1.41E-05	1.72E-02
+cellular response to light stimulus (GO:0071482)	113	8	.66	+	12.10	5.41E-07	1.23E-03
+detection of external stimulus (GO:0009581)	132	8	.77	+	10.36	1.64E-06	3.25E-03
+detection of abiotic stimulus (GO:0009582)	134	8	.78	+	10.20	1.82E-06	3.22E-03
+sensory perception of light stimulus (GO:0050953)	223	13	1.30	+	9.96	1.24E-09	1.97E-05
+visual perception (GO:0007601)	220	12	1.29	+	9.32	1.12E-08	8.93E-05
+retina development in camera-type eye (GO:0060041)	149	7	.87	+	8.03	3.61E-05	3.37E-02
+cellular response to radiation (GO:0071478)	172	8	1.01	+	7.95	1.06E-05	1.52E-02
+response to light stimulus (GO:0009416)	312	13	1.83	+	7.12	5.65E-08	2.99E-04
+response to radiation (GO:0009314)	441	13	2.58	+	5.04	2.49E-06	3.96E-03
+response to hypoxia (GO:0001666)	347	10	2.03	+	4.93	4.59E-05	4.05E-02
+response to decreased oxygen levels (GO:0036293)	360	10	2.11	+	4.75	6.19E-05	5.18E-02
+regulation of protein catabolic process (GO:0042176)	405	11	2.37	+	4.64	3.20E-05	3.18E-02
+positive regulation of catabolic process (GO:0009896)	464	12	2.71	+	4.42	2.21E-05	2.51E-02
+response to abiotic stimulus (GO:0009628)	1167	23	6.83	+	3.37	3.26E-07	1.04E-03
+regulation of catabolic process (GO:0009894)	1042	19	6.10	+	3.12	1.18E-05	1.56E-02
+regulation of cellular catabolic process (GO:0031329)	878	16	5.14	+	3.11	6.22E-05	4.94E-02
+cellular response to stress (GO:0033554)	1756	25	10.27	+	2.43	2.88E-05	3.05E-02

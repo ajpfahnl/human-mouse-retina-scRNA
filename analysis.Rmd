@@ -1,6 +1,8 @@
 ---
 title: "Integrating Primate Data into Analysis"
-output: html_notebook
+output: 
+  html_notebook:
+    toc: true
 ---
 # Setup
 Load libraries
@@ -155,15 +157,7 @@ FeaturePlot(object = ret.combined,
             pt.size = 0.1,
             cols = c("lightgrey", "#F26969"),
             min.cutoff = "q9",
-            combine = TRUE) & NoLegend() & NoAxes
-
-# Cowplot method: make sure to change to "combine = FALSE" and remove "& NoLegend() & NoAxes"
-
-# for(i in 1:length(p)) {
-#   p[[i]] <- p[[i]] + NoLegend() + NoAxes()
-# }
-# 
-# cowplot::plot_grid(plotlist = p, ncol=3)
+            combine = TRUE) & NoLegend() & NoAxes()
 ```
 
 * Rod : pde6a
@@ -224,8 +218,17 @@ cells.diffgenes <- as.list(cells.types)
 cells.diffgenes <- lapply(cells.diffgenes, FUN = function(x) {
   lab_human <- sprintf("%s_human_ret", x)
   lab_mouse <- sprintf("%s_mouse_ret", x)
-  return(FindMarkers(ret.combined, ident.1 = lab_human, ident.2 = lab_mouse, verbose = FALSE))
+  return(FindMarkers(ret.combined, ident.1 = lab_human, ident.2 = lab_mouse))
 })
+
+
+for(i in seq_along(cells.diffgenes)) {
+	x <- cells.diffgenes[[i]]
+	x <- cbind(x, logp = -log(x$p_val), types = cells.types[[i]], genes = rownames(x))
+	x <- x[!grepl("mt-", x$genes),] # remove mitochondrial genes
+	cells.diffgenes[[i]] <- x
+	rm(x)
+}
 ```
 Tables with the most differentially expressed genes in each cell subtype:
 ```{r}
@@ -259,5 +262,73 @@ for (i in seq_along(cells.types)) {
 Check cell proportion for each species:
 ```{r}
 knitr::kable(prop.table(x = table(Idents(ret.combined), ret.combined@meta.data$orig.ident), margin = 2))
+```
+
+# Gene Enrichment Analysis
+```{r}
+library(ggplot2)
+library(ggrepel)
+library(scales)
+library(data.table)
+cells.diffgenes.combined <- rbindlist(cells.diffgenes)
+
+# Preprocessing
+# for(i in seq_along(cells.diffgenes.combined)) {
+# 	if (cells.diffgenes.combined[i]$logp > 750) {
+# 		cells.diffgenes.combined[i]$logp <- 749
+# 	}
+# 	if (cells.diffgenes.combined[i]$avg_logFC > 3) {
+# 		cells.diffgenes.combined[i]$avg_logFC <- 2.99
+# 	}
+# }
+# 
+# cells.diffgenes.combined$logp <- gsub("Inf", 749, cells.diffgenes.combined$logp)
+
+ggplot(data=cells.diffgenes.combined, 
+		   aes(x=avg_logFC,y=logp, colour=types, label = genes)) + 
+	geom_point(size=0.2) + 
+	theme_bw() + 
+	theme(panel.background = element_rect(fill = NA), 
+		  axis.ticks.x = element_blank(),  
+		  axis.text.y = element_text(size = 12), 
+		  panel.grid.major = element_blank(), 
+		  panel.grid.minor = element_blank()) + 
+	labs(x = "log2(Fold changes)\n(3K/WT)", y ="-log10(p value)") +
+	scale_x_continuous(limits=c(-3, 3)) +
+	scale_y_continuous(limits=c(1, 750)) +
+	geom_hline(yintercept= 1, colour="grey", linetype="dashed", size=0.7 ) +
+	geom_vline(xintercept= 0 , colour="grey",   size=0.7)
+
+```
+
+```{r, fig.height = 4, fig.width = 6, dpi = 400, warning=FALSE}
+plot_enrichment <- function(type = "Rod", other = "") {
+	file_path <- sprintf("enrich_data/%s_%s.txt", type, other)
+	x <- read.table(file_path, header=T, sep="\t", skip = 11)
+	colnames(x) <- gsub("upload_1..fold.Enrichment.", "Fold_Enrichment", colnames(x))
+	colnames(x) <- gsub("upload_1..FDR.", "FDR", colnames(x))
+	colnames(x) <- gsub("GO.biological.process.complete", "GO", colnames(x))
+	colnames(x) <- gsub("Homo.sapiens...REFLIST..20851.", "Count", colnames(x))
+	x$GO<- factor(x$GO, levels = x$GO[order(x$Fold_Enrichment, decreasing =F)])
+	x <- x[order(x$FDR),]
+	x <- x[1:10,]
+	g<- ggplot(data=x, aes(x=Fold_Enrichment, y=GO, colour=FDR)) + 
+		geom_point(aes(size=Count)) + 
+		theme_bw() +
+		theme(panel.background = element_rect(fill = NA) , 
+			  axis.ticks.x=element_blank(), 
+			  axis.text.y = element_text(size = 12) , 
+			  panel.grid.major = element_blank(), 
+			  panel.grid.minor = element_blank()) + 
+		labs(x = " ", y =" ") +
+		scale_colour_gradient(low = "red", high = "blue") +
+		ggtitle(type)
+	return(g)
+}
+
+for (type in cells.types) {
+	print(plot_enrichment(type = type, other= "top200"))
+	rm(type)
+}
 ```
 

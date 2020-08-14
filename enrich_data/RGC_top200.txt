@@ -1,0 +1,16 @@
+
+
+
+
+
+Analysis Type:	PANTHER Overrepresentation Test (Released 20200728)
+Annotation Version and Release Date:	GO Ontology database DOI:  10.5281/zenodo.3954044 Released 2020-07-16
+Analyzed List:	upload_1 (Homo sapiens)
+Reference List:	Homo sapiens (all genes in database)
+Test Type:	FISHER
+Correction:	FDR
+GO biological process complete	Homo sapiens - REFLIST (20851)	upload_1 (167)	upload_1 (expected)	upload_1 (over/under)	upload_1 (fold Enrichment)	upload_1 (raw P-value)	upload_1 (FDR)
+establishment of localization in cell (GO:0051649)	2385	48	19.10	+	2.51	1.29E-09	2.05E-05
+cellular localization (GO:0051641)	3015	53	24.15	+	2.19	1.58E-08	1.26E-04
+intracellular transport (GO:0046907)	1528	30	12.24	+	2.45	7.58E-06	4.02E-02
+establishment of localization (GO:0051234)	4693	63	37.59	+	1.68	1.01E-05	4.02E-02

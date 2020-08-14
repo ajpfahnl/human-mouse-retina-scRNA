@@ -1,0 +1,50 @@
+
+
+
+
+
+Analysis Type:	PANTHER Overrepresentation Test (Released 20200728)
+Annotation Version and Release Date:	GO Ontology database DOI:  10.5281/zenodo.3954044 Released 2020-07-16
+Analyzed List:	upload_1 (Homo sapiens)
+Reference List:	Homo sapiens (all genes in database)
+Test Type:	FISHER
+Correction:	FDR
+GO biological process complete	Homo sapiens - REFLIST (20851)	upload_1 (165)	upload_1 (expected)	upload_1 (over/under)	upload_1 (fold Enrichment)	upload_1 (raw P-value)	upload_1 (FDR)
+protein insertion into mitochondrial inner membrane (GO:0045039)	8	3	.06	+	47.39	7.49E-05	3.72E-02
+detection of visible light (GO:0009584)	48	7	.38	+	18.43	2.39E-07	6.34E-04
+phototransduction (GO:0007602)	45	6	.36	+	16.85	2.87E-06	3.81E-03
+detection of light stimulus (GO:0009583)	62	8	.49	+	16.31	7.60E-08	2.42E-04
+inner mitochondrial membrane organization (GO:0007007)	50	6	.40	+	15.16	5.02E-06	6.14E-03
+photoreceptor cell development (GO:0042461)	48	5	.38	+	13.16	5.94E-05	3.50E-02
+protein targeting to mitochondrion (GO:0006626)	55	5	.44	+	11.49	1.08E-04	4.65E-02
+establishment of protein localization to mitochondrion (GO:0072655)	73	6	.58	+	10.39	3.70E-05	2.35E-02
+protein localization to mitochondrion (GO:0070585)	80	6	.63	+	9.48	5.98E-05	3.40E-02
+detection of external stimulus (GO:0009581)	132	9	1.04	+	8.62	1.76E-06	3.11E-03
+visual perception (GO:0007601)	220	15	1.74	+	8.62	5.62E-10	4.47E-06
+sensory perception of light stimulus (GO:0050953)	223	15	1.76	+	8.50	6.70E-10	3.55E-06
+detection of abiotic stimulus (GO:0009582)	134	9	1.06	+	8.49	1.98E-06	3.14E-03
+mitochondrial transport (GO:0006839)	225	9	1.78	+	5.05	1.00E-04	4.43E-02
+response to light stimulus (GO:0009416)	312	12	2.47	+	4.86	1.01E-05	8.94E-03
+translation (GO:0006412)	393	13	3.11	+	4.18	2.02E-05	1.69E-02
+peptide biosynthetic process (GO:0043043)	418	13	3.31	+	3.93	3.75E-05	2.29E-02
+amide biosynthetic process (GO:0043604)	545	16	4.31	+	3.71	9.35E-06	8.74E-03
+mitochondrion organization (GO:0007005)	460	13	3.64	+	3.57	9.63E-05	4.37E-02
+peptide metabolic process (GO:0006518)	538	15	4.26	+	3.52	3.21E-05	2.13E-02
+cellular amide metabolic process (GO:0043603)	813	20	6.43	+	3.11	8.96E-06	8.91E-03
+regulation of cellular catabolic process (GO:0031329)	878	19	6.95	+	2.73	8.30E-05	4.00E-02
+regulation of catabolic process (GO:0009894)	1042	22	8.25	+	2.67	3.15E-05	2.18E-02
+organonitrogen compound biosynthetic process (GO:1901566)	1405	29	11.12	+	2.61	2.28E-06	3.29E-03
+response to abiotic stimulus (GO:0009628)	1167	24	9.23	+	2.60	2.02E-05	1.61E-02
+intracellular transport (GO:0046907)	1528	31	12.09	+	2.56	1.36E-06	3.10E-03
+establishment of localization in cell (GO:0051649)	2385	47	18.87	+	2.49	4.02E-09	1.60E-05
+cellular localization (GO:0051641)	3015	58	23.86	+	2.43	4.08E-11	6.49E-07
+cellular protein localization (GO:0034613)	1648	31	13.04	+	2.38	7.32E-06	8.31E-03
+cellular macromolecule localization (GO:0070727)	1657	31	13.11	+	2.36	7.96E-06	8.44E-03
+protein transport (GO:0015031)	1509	27	11.94	+	2.26	6.75E-05	3.57E-02
+protein localization (GO:0008104)	2200	39	17.41	+	2.24	1.45E-06	2.87E-03
+establishment of protein localization (GO:0045184)	1594	28	12.61	+	2.22	8.78E-05	4.11E-02
+macromolecule localization (GO:0033036)	2551	40	20.19	+	1.98	2.23E-05	1.69E-02
+cellular component assembly (GO:0022607)	2391	37	18.92	+	1.96	6.80E-05	3.49E-02
+transport (GO:0006810)	4561	59	36.09	+	1.63	6.11E-05	3.35E-02
+establishment of localization (GO:0051234)	4693	59	37.14	+	1.59	1.14E-04	4.77E-02
+localization (GO:0051179)	5850	72	46.29	+	1.56	2.51E-05	1.82E-02

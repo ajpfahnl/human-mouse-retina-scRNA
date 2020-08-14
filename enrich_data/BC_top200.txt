@@ -1,0 +1,27 @@
+
+
+
+
+
+Analysis Type:	PANTHER Overrepresentation Test (Released 20200728)
+Annotation Version and Release Date:	GO Ontology database DOI:  10.5281/zenodo.3954044 Released 2020-07-16
+Analyzed List:	upload_1 (Homo sapiens)
+Reference List:	Homo sapiens (all genes in database)
+Test Type:	FISHER
+Correction:	FDR
+GO biological process complete	Homo sapiens - REFLIST (20851)	upload_1 (135)	upload_1 (expected)	upload_1 (over/under)	upload_1 (fold Enrichment)	upload_1 (raw P-value)	upload_1 (FDR)
+regulation of trans-synaptic signaling (GO:0099177)	457	16	2.96	+	5.41	6.79E-08	3.60E-04
+cellular component organization (GO:0016043)	5688	66	36.83	+	1.79	1.05E-07	4.18E-04
+modulation of chemical synaptic transmission (GO:0050804)	456	16	2.95	+	5.42	6.60E-08	5.25E-04
+cellular component assembly (GO:0022607)	2391	39	15.48	+	2.52	3.83E-08	6.08E-04
+cellular component organization or biogenesis (GO:0071840)	5908	67	38.25	+	1.75	2.35E-07	6.24E-04
+cellular component biogenesis (GO:0044085)	2652	40	17.17	+	2.33	2.06E-07	6.55E-04
+organonitrogen compound biosynthetic process (GO:1901566)	1405	25	9.10	+	2.75	4.16E-06	9.45E-03
+regulation of synaptic plasticity (GO:0048167)	193	9	1.25	+	7.20	6.52E-06	1.30E-02
+protein-containing complex assembly (GO:0065003)	1305	23	8.45	+	2.72	1.25E-05	2.20E-02
+regulation of catabolic process (GO:0009894)	1042	20	6.75	+	2.96	1.51E-05	2.40E-02
+trans-synaptic signaling (GO:0099537)	436	12	2.82	+	4.25	3.35E-05	4.09E-02
+organelle organization (GO:0006996)	3563	43	23.07	+	1.86	2.83E-05	4.09E-02
+acidic amino acid transport (GO:0015800)	52	5	.34	+	14.85	3.27E-05	4.34E-02
+neuron development (GO:0048666)	848	17	5.49	+	3.10	4.12E-05	4.37E-02
+regulation of neuronal synaptic plasticity (GO:0048168)	54	5	.35	+	14.30	3.87E-05	4.40E-02
